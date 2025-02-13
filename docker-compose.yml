@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  name:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: name
+    environment:
+      - JWT_ACCESS_SECRET=your_access_secret
+      - JWT_REFRESH_SECRET=your_refresh_secret
+      - ACCESS_TOKEN_TTL=3600
+      - REFRESH_TOKEN_TTL=86400
+      - LOG_LEVEL=info
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=admin
+      - DB_PASSWORD=1234
+      - DB_NAME=sdb
+      - HOST=0.0.0.0
+      - PORT=8080
+      - GRPC_PORT=50051
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+      - REDIS_NUMBER=0
+      - DEBUG=${DEBUG}
+    depends_on:
+      - postgres
+      - redis
+      - prometheus
+      - grafana
+      - node-exporter
+    ports:
+      - "8080:8080"
+
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_DB: sdb
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yaml:/etc/prometheus.yaml
+    command:
+      - '--config.file=/etc/prometheus.yaml'
+    ports:
+      - "9090:9090"
+  
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - prometheus
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    ports:
+      - "9100:9100"
+
+volumes:
+  postgres-data:
+  grafana-data:
+  redis-data:

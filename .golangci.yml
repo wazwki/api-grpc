@@ -1,0 +1,13 @@
+run:
+  timeout: 5m
+  tests: true
+
+linters:
+  enable-all: false
+  enable:
+    - errcheck
+    - govet
+    - staticcheck
+    - gofmt
+    - unused
+    - ineffassign

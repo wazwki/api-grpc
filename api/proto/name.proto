@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package namepb;
+
+option go_package = "namepb/";
+
+import "google/api/annotations.proto";
+
+service NameService {
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/name/healthcheck"
+    };
+  }
+}
+
+message HealthCheckRequest {}
+
+message HealthCheckResponse {
+  string status = 1;
+}
