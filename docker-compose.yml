@@ -19,7 +19,7 @@ services:
       - DB_NAME=sdb
       - HOST=0.0.0.0
       - PORT=8080
-      - GRPC_PORT=50051
+      - GRPC_PORT=50050
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_PASSWORD=
@@ -33,6 +33,7 @@ services:
       - node-exporter
     ports:
       - "8080:8080"
+      - "50050:50050"
 
   postgres:
     image: postgres:latest

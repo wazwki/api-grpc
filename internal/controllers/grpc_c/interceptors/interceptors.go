@@ -18,21 +18,23 @@ import (
 
 func JWTInterceptor(cfg *config.Config, jwt *jwtutil.JWTUtil) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-		if info.FullMethod == "/api.v1.Name/HealthCheck" {
+		if info.FullMethod == "/namepb.NameService/HealthCheck" {
 			return handler(ctx, req)
 		}
-		/*
-			if info.FullMethod == "/api.v1.Name/HealthCheck" {
-				token, err := jwt.GenerateAccessToken(ctx)
-				if err != nil {
-					return nil, status.Error(codes.Unauthenticated, "failed to generate access token")
-				}
 
-				ctx = metadata.NewOutgoingContext(ctx, metadata.New(map[string]string{
-					"Authorization": "Bearer " + token,
-				}))
+		if info.FullMethod == "/namepb.NameService/GetToken" {
+			token, err := jwt.GenerateAccessToken(ctx)
+			if err != nil {
+				return nil, status.Error(codes.Unauthenticated, "failed to generate access token")
 			}
-		*/
+
+			ctx = metadata.NewOutgoingContext(ctx, metadata.New(map[string]string{
+				"Authorization": "Bearer " + token,
+			}))
+
+			return handler(ctx, req)
+		}
+
 		md, ok := metadata.FromIncomingContext(ctx)
 		if !ok {
 			return nil, status.Error(codes.Unauthenticated, "missing metadata")

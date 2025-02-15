@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"net/http"
 	"time"
@@ -24,6 +25,7 @@ type App struct {
 	migrateDSN string
 	pool       *pgxpool.Pool
 	grpcServer *grpc.Server
+	grpcAddr   string
 	httpServer *http.Server
 }
 
@@ -60,7 +62,7 @@ func New(cfg *config.Config) (*App, error) {
 		return nil, err
 	}
 
-	return &App{migrateDSN: cfg.DBdsn, pool: pool, grpcServer: grpcServer, httpServer: srv}, nil
+	return &App{migrateDSN: cfg.DBdsn, pool: pool, grpcServer: grpcServer, httpServer: srv, grpcAddr: fmt.Sprintf("%v:%v", cfg.Host, cfg.GRPCPort)}, nil
 }
 
 func (a *App) Run() error {
@@ -70,7 +72,7 @@ func (a *App) Run() error {
 	}
 	logger.Info("Migrations applied", zap.String("module", "name"))
 
-	lis, err := net.Listen("tcp", a.httpServer.Addr)
+	lis, err := net.Listen("tcp", a.grpcAddr)
 	if err != nil {
 		logger.Error("Fail to listen", zap.Error(err), zap.String("module", "name"))
 		return err
@@ -78,14 +80,14 @@ func (a *App) Run() error {
 
 	go func() {
 		logger.Info("Starting grpc server", zap.String("module", "name"))
-		if err := a.grpcServer.Serve(lis); err != nil {
+		if err := a.grpcServer.Serve(lis); err != nil && err != grpc.ErrServerStopped {
 			logger.Error("Fail to start grpc server", zap.Error(err), zap.String("module", "name"))
 		}
 	}()
 
 	go func() {
 		logger.Info("Starting http server", zap.String("module", "name"))
-		if err := a.httpServer.ListenAndServe(); err != nil {
+		if err := a.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logger.Error("Fail to start http server", zap.Error(err), zap.String("module", "name"))
 		}
 	}()

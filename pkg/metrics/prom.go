@@ -7,11 +7,11 @@ import (
 var (
 	ObserveRequestDuration = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
-			Name:    "http_request_duration_seconds",
-			Help:    "Duration of HTTP requests.",
+			Name:    "request_duration_seconds",
+			Help:    "Duration of requests.",
 			Buckets: prometheus.DefBuckets,
 		},
-		[]string{"method", "path"},
+		[]string{"method"},
 	)
 )
 

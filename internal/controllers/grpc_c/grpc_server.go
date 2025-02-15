@@ -2,6 +2,7 @@ package grpc_c
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -15,18 +16,29 @@ import (
 )
 
 func NewGRPCServer(cfg *config.Config, nameControllers namepb.NameServiceServer, jwt *jwtutil.JWTUtil) (*grpc.Server, *http.Server, error) {
-	grpcServer := grpc.NewServer(
-		grpc.ChainUnaryInterceptor(
-			interceptors.JWTInterceptor(cfg, jwt),
-			interceptors.MetricsInterceptor(),
+	var interceptorsUse []grpc.UnaryServerInterceptor
+
+	switch cfg.Debug {
+	case true:
+		interceptorsUse = []grpc.UnaryServerInterceptor{
 			interceptors.LoggerInterceptor(),
-		),
-	)
+			interceptors.MetricsInterceptor(),
+		}
+	case false:
+		interceptorsUse = []grpc.UnaryServerInterceptor{
+			interceptors.JWTInterceptor(cfg, jwt),
+			interceptors.LoggerInterceptor(),
+			interceptors.MetricsInterceptor(),
+		}
+	}
+
+	grpcServer := grpc.NewServer(grpc.ChainUnaryInterceptor(interceptorsUse...))
+
 	namepb.RegisterNameServiceServer(grpcServer, nameControllers)
 
 	runtimeMux := runtime.NewServeMux()
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
-	err := namepb.RegisterNameServiceHandlerFromEndpoint(context.Background(), runtimeMux, cfg.GRPCPort, opts)
+	err := namepb.RegisterNameServiceHandlerFromEndpoint(context.Background(), runtimeMux, fmt.Sprintf("%v:%v", cfg.Host, cfg.GRPCPort), opts)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -36,7 +48,7 @@ func NewGRPCServer(cfg *config.Config, nameControllers namepb.NameServiceServer,
 	mux.Handle("/", runtimeMux)
 
 	srv := &http.Server{
-		Addr:    cfg.GRPCPort,
+		Addr:    fmt.Sprintf("%v:%v", cfg.Host, cfg.Port),
 		Handler: mux,
 	}
 
