@@ -3,8 +3,8 @@ version: '3.8'
 services:
   name:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ../../
+      dockerfile: build/package/name.dockerfile
     container_name: name
     environment:
       - JWT_ACCESS_SECRET=your_access_secret
@@ -59,7 +59,7 @@ services:
     image: prom/prometheus:latest
     container_name: prometheus
     volumes:
-      - ./prometheus.yaml:/etc/prometheus.yaml
+      - ../../configs/prometheus/prometheus.yaml:/etc/prometheus.yaml
     command:
       - '--config.file=/etc/prometheus.yaml'
     ports:

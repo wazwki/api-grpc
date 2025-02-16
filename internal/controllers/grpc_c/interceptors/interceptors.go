@@ -73,3 +73,17 @@ func LoggerInterceptor() grpc.UnaryServerInterceptor {
 		return handler(ctx, req)
 	}
 }
+
+func CorsInterceptor() grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+		resp, err := handler(ctx, req)
+		if err == nil {
+			if md, ok := metadata.FromOutgoingContext(ctx); ok {
+				md.Append("Access-Control-Allow-Origin", "*")
+				md.Append("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization")
+				md.Append("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+			}
+		}
+		return resp, err
+	}
+}

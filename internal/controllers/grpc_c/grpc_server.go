@@ -44,8 +44,8 @@ func NewGRPCServer(cfg *config.Config, nameControllers namepb.NameServiceServer,
 	}
 
 	mux := http.NewServeMux()
-	mux.Handle("/metrics", promhttp.Handler())
 	mux.Handle("/", runtimeMux)
+	mux.Handle("/metrics", promhttp.Handler())
 
 	srv := &http.Server{
 		Addr:    fmt.Sprintf("%v:%v", cfg.Host, cfg.Port),

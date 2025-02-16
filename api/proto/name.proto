@@ -4,7 +4,7 @@ package namepb;
 
 option go_package = "namepb/";
 
-import "google/api/annotations.proto";
+import "annotations.proto";
 
 service NameService {
   rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse) {

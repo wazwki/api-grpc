@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"path/filepath"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -27,6 +28,7 @@ type App struct {
 	grpcServer *grpc.Server
 	grpcAddr   string
 	httpServer *http.Server
+	debug      bool
 }
 
 func New(cfg *config.Config) (*App, error) {
@@ -62,7 +64,7 @@ func New(cfg *config.Config) (*App, error) {
 		return nil, err
 	}
 
-	return &App{migrateDSN: cfg.DBdsn, pool: pool, grpcServer: grpcServer, httpServer: srv, grpcAddr: fmt.Sprintf("%v:%v", cfg.Host, cfg.GRPCPort)}, nil
+	return &App{migrateDSN: cfg.DBdsn, pool: pool, grpcServer: grpcServer, httpServer: srv, grpcAddr: fmt.Sprintf("%v:%v", cfg.Host, cfg.GRPCPort), debug: cfg.Debug}, nil
 }
 
 func (a *App) Run() error {
@@ -91,6 +93,25 @@ func (a *App) Run() error {
 			logger.Error("Fail to start http server", zap.Error(err), zap.String("module", "name"))
 		}
 	}()
+
+	if a.debug {
+		go func() {
+			mux := http.NewServeMux()
+			mux.HandleFunc("/swagger-ui/swagger.json", func(w http.ResponseWriter, r *http.Request) {
+				path, err := filepath.Abs("./api/docs/apidocs.swagger.json")
+				if err != nil {
+					http.Error(w, "File not found", http.StatusNotFound)
+					return
+				}
+				http.ServeFile(w, r, path)
+			})
+
+			mux.Handle("/swagger-ui/", http.StripPrefix("/swagger-ui/", http.FileServer(http.Dir("./third_party/swagger-ui"))))
+			if err := http.ListenAndServe(":8081", mux); err != nil && err != http.ErrServerClosed {
+				logger.Error("Fail to start http server", zap.Error(err), zap.String("module", "name"))
+			}
+		}()
+	}
 
 	return nil
 }
